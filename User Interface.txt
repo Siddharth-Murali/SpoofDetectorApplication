@@ -1,0 +1,1751 @@
+1. Main App Entry Point
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:aura_check/firebase_options.dart';
+import 'package:aura_check/app/app.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const AuraCheckApp());
+}
+2. App Configuration
+import 'package:flutter/material.dart';
+import 'package:aura_check/theme/app_theme.dart';
+import 'package:aura_check/routes/app_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aura_check/features/detection/bloc/detection_bloc.dart';
+import 'package:aura_check/features/settings/bloc/settings_bloc.dart';
+
+class AuraCheckApp extends StatelessWidget {
+  const AuraCheckApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => DetectionBloc()),
+        BlocProvider(create: (_) => SettingsBloc()),
+      ],
+      child: BlocBuilder<SettingsBloc, SettingsState>(
+        builder: (context, state) {
+          return MaterialApp(
+            title: 'Aura Check',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            onGenerateRoute: AppRouter.onGenerateRoute,
+            initialRoute: AppRouter.splash,
+            debugShowCheckedModeBanner: false,
+          );
+        },
+      ),
+    );
+  }
+}
+3. Theme Configuration
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  // Brand Colors
+  static const Color primaryColor = Color(0xFF6C63FF);
+  static const Color secondaryColor = Color(0xFF00C9A7);
+  static const Color accentColor = Color(0xFFFFA26B);
+  
+  // Status Colors
+  static const Color safeColor = Color(0xFF4CAF50);
+  static const Color warningColor = Color(0xFFFF9800);
+  static const Color dangerColor = Color(0xFFFF5252);
+  
+  // Neutral Colors
+  static const Color backgroundLight = Color(0xFFF8F9FA);
+  static const Color backgroundDark = Color(0xFF121212);
+  static const Color surfaceLight = Colors.white;
+  static const Color surfaceDark = Color(0xFF1E1E1E);
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      primaryColor: primaryColor,
+      colorScheme: ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: surfaceLight,
+        background: backgroundLight,
+      ),
+      scaffoldBackgroundColor: backgroundLight,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: primaryColor,
+        elevation: 0,
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      buttonTheme: ButtonThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(fontWeight: FontWeight.bold),
+        titleLarge: TextStyle(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData.dark().copyWith(
+      primaryColor: primaryColor,
+      colorScheme: ColorScheme.dark(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: surfaceDark,
+        background: backgroundDark,
+      ),
+      scaffoldBackgroundColor: backgroundDark,
+      appBarTheme: AppBarTheme(
+        backgroundColor: surfaceDark,
+        elevation: 0,
+      ),
+      cardTheme: CardTheme(
+        color: surfaceDark,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+}
+4. App Router
+import 'package:flutter/material.dart';
+import 'package:aura_check/features/splash/splash_screen.dart';
+import 'package:aura_check/features/home/home_screen.dart';
+import 'package:aura_check/features/detection/live_detection_screen.dart';
+import 'package:aura_check/features/detection/file_analysis_screen.dart';
+import 'package:aura_check/features/history/history_screen.dart';
+import 'package:aura_check/features/settings/settings_screen.dart';
+
+class AppRouter {
+  static const String splash = '/';
+  static const String home = '/home';
+  static const String liveDetection = '/live-detection';
+  static const String fileAnalysis = '/file-analysis';
+  static const String history = '/history';
+  static const String settings = '/settings';
+
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case splash:
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
+      case home:
+        return MaterialPageRoute(builder: (_) => const HomeScreen());
+      case liveDetection:
+        return MaterialPageRoute(builder: (_) => const LiveDetectionScreen());
+      case fileAnalysis:
+        return MaterialPageRoute(builder: (_) => const FileAnalysisScreen());
+      case history:
+        return MaterialPageRoute(builder: (_) => const HistoryScreen());
+      case settings:
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+      default:
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            body: Center(
+              child: Text('No route defined for ${settings.name}'),
+            ),
+          ),
+        );
+    }
+  }
+}
+5. Splash Screen
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import 'package:aura_check/routes/app_router.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({Key? key}) : super(key: key);
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    );
+    
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Navigator.pushReplacementNamed(context, AppRouter.home);
+      }
+    });
+    
+    _controller.forward();
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Replace with your own animation asset
+            Lottie.asset(
+              'assets/animations/voice_wave.json',
+              controller: _controller,
+              height: 200,
+              width: 200,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Aura Check',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Detect voice spoofing in real-time',
+              style: TextStyle(
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+6. Home Screen
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import 'package:aura_check/routes/app_router.dart';
+import 'package:aura_check/theme/app_theme.dart';
+import 'package:aura_check/widgets/gradient_card.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header with animation
+            Container(
+              height: MediaQuery.of(context).size.height * 0.3,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.secondaryColor,
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Lottie.asset(
+                    'assets/animations/shield_scan.json',
+                    height: 120,
+                    width: 120,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Aura Check',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
+                    'Your voice security guardian',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Main content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'What would you like to do?',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Feature cards
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        children: [
+                          // Live Detection Card
+                          GradientCard(
+                            title: 'Live Call\nDetection',
+                            icon: Icons.phone_in_talk,
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.primaryColor, Color(0xFF8A80FF)],
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context, 
+                              AppRouter.liveDetection
+                            ),
+                          ),
+                          
+                          // File Analysis Card
+                          GradientCard(
+                            title: 'Analyze\nAudio File',
+                            icon: Icons.upload_file,
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.secondaryColor, Color(0xFF00E5C2)],
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context, 
+                              AppRouter.fileAnalysis
+                            ),
+                          ),
+                          
+                          // History Card
+                          GradientCard(
+                            title: 'Detection\nHistory',
+                            icon: Icons.history,
+                            gradient: const LinearGradient(
+                              colors: [AppTheme.accentColor, Color(0xFFFFBE94)],
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context, 
+                              AppRouter.history
+                            ),
+                          ),
+                          
+                          // Settings Card
+                          GradientCard(
+                            title: 'Settings',
+                            icon: Icons.settings,
+                            gradient: const LinearGradient(
+                              colors: [Colors.grey, Color(0xFFBDBDBD)],
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context, 
+                              AppRouter.settings
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+7. Gradient Card Widget (continued)
+import 'package:flutter/material.dart';
+
+class GradientCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final LinearGradient gradient;
+  final VoidCallback onTap;
+
+  const GradientCard({
+    Key? key,
+    required this.title,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                size: 40,
+                color: Colors.white,
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+gradient_card.dart
+8. Detection Bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'dart:async';
+import 'package:aura_check/services/detection_service.dart';
+
+// Events
+abstract class DetectionEvent extends Equatable {
+  const DetectionEvent();
+  
+  @override
+  List<Object> get props => [];
+}
+
+class StartLiveDetection extends DetectionEvent {}
+
+class StopLiveDetection extends DetectionEvent {}
+
+class AnalyzeAudioFile extends DetectionEvent {
+  final String filePath;
+  
+  const AnalyzeAudioFile(this.filePath);
+  
+  @override
+  List<Object> get props => [filePath];
+}
+
+class DetectionResultReceived extends DetectionEvent {
+  final double spoofScore;
+  final String audioSource;
+  
+  const DetectionResultReceived(this.spoofScore, this.audioSource);
+  
+  @override
+  List<Object> get props => [spoofScore, audioSource];
+}
+
+// States
+enum DetectionStatus { initial, detecting, completed, error }
+
+class DetectionState extends Equatable {
+  final DetectionStatus status;
+  final double spoofScore;
+  final String audioSource;
+  final String? errorMessage;
+  final bool isLiveDetectionActive;
+  
+  const DetectionState({
+    this.status = DetectionStatus.initial,
+    this.spoofScore = 0.0,
+    this.audioSource = '',
+    this.errorMessage,
+    this.isLiveDetectionActive = false,
+  });
+  
+  DetectionState copyWith({
+    DetectionStatus? status,
+    double? spoofScore,
+    String? audioSource,
+    String? errorMessage,
+    bool? isLiveDetectionActive,
+  }) {
+    return DetectionState(
+      status: status ?? this.status,
+      spoofScore: spoofScore ?? this.spoofScore,
+      audioSource: audioSource ?? this.audioSource,
+      errorMessage: errorMessage ?? this.errorMessage,
+      isLiveDetectionActive: isLiveDetectionActive ?? this.isLiveDetectionActive,
+    );
+  }
+  
+  @override
+  List<Object?> get props => [status, spoofScore, audioSource, errorMessage, isLiveDetectionActive];
+}
+
+// Bloc
+class DetectionBloc extends Bloc<DetectionEvent, DetectionState> {
+  final DetectionService _detectionService = DetectionService();
+  StreamSubscription? _detectionSubscription;
+  
+  DetectionBloc() : super(const DetectionState()) {
+    on<StartLiveDetection>(_onStartLiveDetection);
+    on<StopLiveDetection>(_onStopLiveDetection);
+    on<AnalyzeAudioFile>(_onAnalyzeAudioFile);
+    on<DetectionResultReceived>(_onDetectionResultReceived);
+  }
+  
+  void _onStartLiveDetection(StartLiveDetection event, Emitter<DetectionState> emit) async {
+    emit(state.copyWith(
+      status: DetectionStatus.detecting,
+      isLiveDetectionActive: true,
+    ));
+    
+    try {
+      await _detectionService.startLiveDetection();
+      _detectionSubscription = _detectionService.detectionResults.listen(
+        (result) {
+          add(DetectionResultReceived(result.spoofScore, 'live_audio'));
+        },
+        onError: (error) {
+          emit(state.copyWith(
+            status: DetectionStatus.error,
+            errorMessage: error.toString(),
+          ));
+        }
+      );
+    } catch (e) {
+      emit(state.copyWith(
+        status: DetectionStatus.error,
+        errorMessage: e.toString(),
+        isLiveDetectionActive: false,
+      ));
+    }
+  }
+  
+  void _onStopLiveDetection(StopLiveDetection event, Emitter<DetectionState> emit) async {
+    await _detectionSubscription?.cancel();
+    await _detectionService.stopLiveDetection();
+    emit(state.copyWith(
+      status: DetectionStatus.completed,
+      isLiveDetectionActive: false,
+    ));
+  }
+  
+  void _onAnalyzeAudioFile(AnalyzeAudioFile event, Emitter<DetectionState> emit) async {
+    emit(state.copyWith(
+      status: DetectionStatus.detecting,
+    ));
+    
+    try {
+      final result = await _detectionService.analyzeAudioFile(event.filePath);
+      emit(state.copyWith(
+        status: DetectionStatus.completed,
+        spoofScore: result.spoofScore,
+        audioSource: event.filePath,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        status: DetectionStatus.error,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+  
+  void _onDetectionResultReceived(DetectionResultReceived event, Emitter<DetectionState> emit) {
+    emit(state.copyWith(
+      status: DetectionStatus.completed,
+      spoofScore: event.spoofScore,
+      audioSource: event.audioSource,
+    ));
+  }
+  
+  @override
+  Future<void> close() {
+    _detectionSubscription?.cancel();
+    _detectionService.dispose();
+    return super.close();
+  }
+}
+9. Detection Service
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter_tflite/flutter_tflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:audio_streams/audio_streams.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class DetectionResult {
+  final double spoofScore;
+  final Map<String, dynamic>? details;
+  
+  DetectionResult({
+    required this.spoofScore,
+    this.details,
+  });
+}
+
+class DetectionService {
+  static const int _sampleRate = 16000;
+  static const int _bufferSize = 8192;
+  
+  final _detectionController = StreamController<DetectionResult>.broadcast();
+  Stream<DetectionResult> get detectionResults => _detectionController.stream;
+  
+  AudioStreams? _audioStreams;
+  StreamSubscription? _audioSubscription;
+  bool _isModelLoaded = false;
+  
+  Future<void> _loadModel() async {
+    if (_isModelLoaded) return;
+    
+    try {
+      await Tflite.loadModel(
+        model: "assets/models/voice_spoof_detection.tflite",
+        labels: "assets/models/labels.txt",
+      );
+      _isModelLoaded = true;
+    } catch (e) {
+      throw Exception('Failed to load TFLite model: $e');
+    }
+  }
+  
+  Future<void> startLiveDetection() async {
+    // Request microphone permission
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      throw Exception('Microphone permission denied');
+    }
+    
+    await _loadModel();
+    
+    _audioStreams = AudioStreams(
+      sampleRate: _sampleRate,
+      channelConfig: ChannelConfig.mono,
+      audioFormat: AudioFormat.pcm16bit,
+      bufferSize: _bufferSize,
+    );
+    
+    await _audioStreams!.start();
+    
+    _audioSubscription = _audioStreams!.audioStream.listen((buffer) {
+      _processAudioBuffer(buffer);
+    });
+  }
+  
+  Future<void> stopLiveDetection() async {
+    await _audioSubscription?.cancel();
+    await _audioStreams?.stop();
+    _audioStreams = null;
+  }
+  
+  Future<DetectionResult> analyzeAudioFile(String filePath) async {
+    await _loadModel();
+    
+    // For demo purposes, we'll simulate a detection result
+    // In a real app, you would process the audio file through the TFLite model
+    
+    // Simulate processing time
+    await Future.delayed(const Duration(seconds: 2));
+    
+    // Return a simulated result based on the filename
+    // In a real app, this would be the actual model output
+    if (filePath.contains('spoof') || filePath.contains('fake')) {
+      return DetectionResult(
+        spoofScore: 0.92,
+        details: {
+          'confidence': 0.92,
+          'artifacts_detected': true,
+          'frequency_anomalies': true,
+        },
+      );
+    } else {
+      return DetectionResult(
+        spoofScore: 0.08,
+        details: {
+          'confidence': 0.92,
+          'artifacts_detected': false,
+          'frequency_anomalies': false,
+        },
+      );
+    }
+  }
+  
+  void _processAudioBuffer(List<int> buffer) async {
+    // Convert buffer to format expected by TFLite
+    // This is a simplified example - real implementation would depend on model requirements
+    
+    // For demo purposes, we'll simulate detection results
+    // In a real app, you would run inference on the audio buffer
+    
+    // Simulate random detection results for demo
+    final random = DateTime.now().millisecondsSinceEpoch % 100 / 100;
+    
+    // Add some variation to make it look realistic
+    final spoofScore = random < 0.7 ? random * 0.3 : random;
+    
+    _detectionController.add(DetectionResult(spoofScore: spoofScore));
+  }
+  
+  void dispose() {
+    _audioSubscription?.cancel();
+    _audioStreams?.stop();
+    _detectionController.close();
+    Tflite.close();
+  }
+}
+10. Settings Bloc
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Events
+abstract class SettingsEvent extends Equatable {
+  const SettingsEvent();
+  
+  @override
+  List<Object> get props => [];
+}
+
+class ToggleDarkMode extends SettingsEvent {}
+
+class ToggleNotifications extends SettingsEvent {}
+
+class SetDetectionSensitivity extends SettingsEvent {
+  final double sensitivity;
+  
+  const SetDetectionSensitivity(this.sensitivity);
+  
+  @override
+  List<Object> get props => [sensitivity];
+}
+
+class LoadSettings extends SettingsEvent {}
+
+// State
+class SettingsState extends Equatable {
+  final bool isDarkMode;
+  final bool notificationsEnabled;
+  final double detectionSensitivity;
+  
+  const SettingsState({
+    this.isDarkMode = false,
+    this.notificationsEnabled = true,
+    this.detectionSensitivity = 0.5,
+  });
+  
+  SettingsState copyWith({
+    bool? isDarkMode,
+    bool? notificationsEnabled,
+    double? detectionSensitivity,
+  }) {
+    return SettingsState(
+      isDarkMode: isDarkMode ?? this.isDarkMode,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      detectionSensitivity: detectionSensitivity ?? this.detectionSensitivity,
+    );
+  }
+  
+  @override
+  List<Object> get props => [isDarkMode, notificationsEnabled, detectionSensitivity];
+}
+
+// Bloc
+class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+  SettingsBloc() : super(const SettingsState()) {
+    on<LoadSettings>(_onLoadSettings);
+    on<ToggleDarkMode>(_onToggleDarkMode);
+    on<ToggleNotifications>(_onToggleNotifications);
+    on<SetDetectionSensitivity>(_onSetDetectionSensitivity);
+    
+    // Load settings when bloc is created
+    add(LoadSettings());
+  }
+  
+  void _onLoadSettings(LoadSettings event, Emitter<SettingsState> emit) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    emit(SettingsState(
+      isDarkMode: prefs.getBool('isDarkMode') ?? false,
+      notificationsEnabled: prefs.getBool('notificationsEnabled') ?? true,
+      detectionSensitivity: prefs.getDouble('detectionSensitivity') ?? 0.5,
+    ));
+  }
+  
+  void _onToggleDarkMode(ToggleDarkMode event, Emitter<SettingsState> emit) async {
+    final newValue = !state.isDarkMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isDarkMode', newValue);
+    
+    emit(state.copyWith(isDarkMode: newValue));
+  }
+  
+  void _onToggleNotifications(ToggleNotifications event, Emitter<SettingsState> emit) async {
+    final newValue = !state.notificationsEnabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notificationsEnabled', newValue);
+    
+    emit(state.copyWith(notificationsEnabled: newValue));
+  }
+  
+  void _onSetDetectionSensitivity(SetDetectionSensitivity event, Emitter<SettingsState> emit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('detectionSensitivity', event.sensitivity);
+    
+    emit(state.copyWith(detectionSensitivity: event.sensitivity));
+  }
+}
+11. Live Detection Screen (continued)
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:aura_check/features/detection/bloc/detection_bloc.dart';
+import 'package:aura_check/theme/app_theme.dart';
+import 'package:aura_check/widgets/spoof_risk_meter.dart';
+import 'package:aura_check/widgets/detection_result_card.dart';
+
+class LiveDetectionScreen extends StatefulWidget {
+  const LiveDetectionScreen({Key? key}) : super(key: key);
+
+  @override
+  State<LiveDetectionScreen> createState() => _LiveDetectionScreenState();
+}
+
+class _LiveDetectionScreenState extends State<LiveDetectionScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    
+    // Start detection when screen opens
+    context.read<DetectionBloc>().add(StartLiveDetection());
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    // Stop detection when screen closes
+    context.read<DetectionBloc>().add(StopLiveDetection());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Live Call Detection'),
+        elevation: 0,
+      ),
+      body: BlocBuilder<DetectionBloc, DetectionState>(
+        builder: (context, state) {
+          return Column(
+            children: [
+              // Status indicator
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                color: state.isLiveDetectionActive 
+                    ? AppTheme.primaryColor 
+                    : Colors.grey,
+                child: Center(
+                  child: Text(
+                    state.isLiveDetectionActive 
+                        ? 'LIVE DETECTION ACTIVE' 
+                        : 'DETECTION INACTIVE',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Animation
+                      Lottie.asset(
+                        'assets/animations/voice_wave_analysis.json',
+                        height: 200,
+                        controller: _animationController,
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Risk meter
+                      SpoofRiskMeter(spoofScore: state.spoofScore),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Result card
+                      if (state.status == DetectionStatus.completed)
+                        DetectionResultCard(
+                          spoofScore: state.spoofScore,
+                          isLive: true,
+                        ),
+                      
+                      const Spacer(),
+                      
+                      // Control button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          if (state.isLiveDetectionActive) {
+                            context.read<DetectionBloc>().add(StopLiveDetection());
+                          } else {
+                            context.read<DetectionBloc>().add(StartLiveDetection());
+                          }
+                        },
+                        icon: Icon(
+                          state.isLiveDetectionActive 
+                              ? Icons.stop_circle 
+                              : Icons.play_circle,
+                        ),
+                        label: Text(
+                          state.isLiveDetectionActive 
+                              ? 'Stop Detection' 
+                              : 'Start Detection',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: state.isLiveDetectionActive 
+                              ? Colors.red 
+                              : AppTheme.primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24, 
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+12. File Analysis Screen
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:aura_check/features/detection/bloc/detection_bloc.dart';
+import 'package:aura_check/theme/app_theme.dart';
+import 'package:aura_check/widgets/spoof_risk_meter.dart';
+import 'package:aura_check/widgets/detection_result_card.dart';
+
+class FileAnalysisScreen extends StatelessWidget {
+  const FileAnalysisScreen({Key? key}) : super(key: key);
+
+  Future<void> _pickAndAnalyzeFile(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      allowMultiple: false,
+    );
+    
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      context.read<DetectionBloc>().add(AnalyzeAudioFile(file.path!));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Analyze Audio File'),
+        elevation: 0,
+      ),
+      body: BlocBuilder<DetectionBloc, DetectionState>(
+        builder: (context, state) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Upload area
+                GestureDetector(
+                  onTap: () => _pickAndAnalyzeFile(context),
+                  child: Container(
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_upload,
+                          size: 64,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          state.status == DetectionStatus.detecting
+                              ? 'Analyzing...'
+                              : 'Tap to upload audio file',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        if (state.audioSource.isNotEmpty && state.status != DetectionStatus.detecting)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              'File: ${state.audioSource.split('/').last}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Loading animation or results
+                if (state.status == DetectionStatus.detecting)
+                  Lottie.asset(
+                    'assets/animations/audio_processing.json',
+                    height: 150,
+                  )
+                else if (state.status == DetectionStatus.completed && state.audioSource.isNotEmpty)
+                  Column(
+                    children: [
+                      SpoofRiskMeter(spoofScore: state.spoofScore),
+                      
+                      const SizedBox(height: 24),
+                      
+                      DetectionResultCard(
+                        spoofScore: state.spoofScore,
+                        isLive: false,
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      ElevatedButton.icon(
+                        onPressed: () => _pickAndAnalyzeFile(context),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Analyze Another File'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.secondaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24, 
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Lottie.asset(
+                    'assets/animations/upload_file.json',
+                    height: 200,
+                  ),
+                
+                if (state.status == DetectionStatus.error)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Text(
+                      'Error: ${state.errorMessage}',
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+13. Spoof Risk Meter Widget
+import 'package:flutter/material.dart';
+import 'package:aura_check/theme/app_theme.dart';
+
+class SpoofRiskMeter extends StatelessWidget {
+  final double spoofScore;
+  
+  const SpoofRiskMeter({
+    Key? key,
+    required this.spoofScore,
+  }) : super(key: key);
+  
+  Color get _riskColor {
+    if (spoofScore < 0.3) {
+      return AppTheme.safeColor;
+    } else if (spoofScore < 0.7) {
+      return AppTheme.warningColor;
+    } else {
+      return AppTheme.dangerColor;
+    }
+  }
+  
+  String get _riskText {
+    if (spoofScore < 0.3) {
+      return 'Low Risk';
+    } else if (spoofScore < 0.7) {
+      return 'Medium Risk';
+    } else {
+      return 'High Risk';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Spoof Risk: ${(spoofScore * 100).toInt()}%',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: _riskColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            children: [
+              // Progress bar
+              FractionallySizedBox(
+                widthFactor: spoofScore,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _riskColor.withOpacity(0.7),
+                        _riskColor,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              
+              // Risk indicator
+              Center(
+                child: Text(
+                  _riskText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+14. Detection Result Card Widget (continued)
+import 'package:flutter/material.dart';
+import 'package:aura_check/theme/app_theme.dart';
+
+class DetectionResultCard extends StatelessWidget {
+  final double spoofScore;
+  final bool isLive;
+  
+  const DetectionResultCard({
+    Key? key,
+    required this.spoofScore,
+    required this.isLive,
+  }) : super(key: key);
+  
+  Color get _resultColor {
+    if (spoofScore < 0.3) {
+      return AppTheme.safeColor;
+    } else if (spoofScore < 0.7) {
+      return AppTheme.warningColor;
+    } else {
+      return AppTheme.dangerColor;
+    }
+  }
+  
+  String get _resultTitle {
+    if (spoofScore < 0.3) {
+      return 'Likely Authentic';
+    } else if (spoofScore < 0.7) {
+      return 'Potentially Spoofed';
+    } else {
+      return 'Likely Fake Voice';
+    }
+  }
+  
+  String get _resultDescription {
+    if (spoofScore < 0.3) {
+      return 'This voice appears to be authentic with natural speech patterns and acoustic properties.';
+    } else if (spoofScore < 0.7) {
+      return 'Some unusual patterns detected. Be cautious and verify the caller\'s identity through other means.';
+    } else {
+      return 'High probability of synthetic or manipulated voice. Do not share sensitive information!';
+    }
+  }
+  
+  IconData get _resultIcon {
+    if (spoofScore < 0.3) {
+      return Icons.check_circle;
+    } else if (spoofScore < 0.7) {
+      return Icons.warning;
+    } else {
+      return Icons.dangerous;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: _resultColor.withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _resultIcon,
+                  color: _resultColor,
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _resultTitle,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: _resultColor,
+                        ),
+                      ),
+                      Text(
+                        isLive ? 'Live Voice Analysis' : 'Audio File Analysis',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text(
+              _resultDescription,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            if (spoofScore >= 0.7)
+              OutlinedButton.icon(
+                onPressed: () {
+                  // In a real app, this would report the call/audio
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Suspicious voice reported!'),
+                      backgroundColor: AppTheme.dangerColor,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.report),
+                label: const Text('Report Suspicious Voice'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.dangerColor,
+                  side: const BorderSide(color: AppTheme.dangerColor),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+15. History Screen
+import 'package:flutter/material.dart';
+import 'package:aura_check/theme/app_theme.dart';
+import 'package:intl/intl.dart';
+
+class HistoryItem {
+  final String id;
+  final double spoofScore;
+  final DateTime timestamp;
+  final String source;
+  final bool isLive;
+  
+  HistoryItem({
+    required this.id,
+    required this.spoofScore,
+    required this.timestamp,
+    required this.source,
+    required this.isLive,
+  });
+}
+
+class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({Key? key}) : super(key: key);
+  
+  // In a real app, this would come from a database
+  List<HistoryItem> get _mockHistoryItems => [
+    HistoryItem(
+      id: '1',
+      spoofScore: 0.12,
+      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+      source: 'Incoming Call: +1 (555) 123-4567',
+      isLive: true,
+    ),
+    HistoryItem(
+      id: '2',
+      spoofScore: 0.85,
+      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+      source: 'Voicemail from Unknown',
+      isLive: true,
+    ),
+    HistoryItem(
+      id: '3',
+      spoofScore: 0.45,
+      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      source: 'suspicious_audio.mp3',
+      isLive: false,
+    ),
+    HistoryItem(
+      id: '4',
+      spoofScore: 0.08,
+      timestamp: DateTime.now().subtract(const Duration(days: 3)),
+      source: 'Incoming Call: Mom',
+      isLive: true,
+    ),
+    HistoryItem(
+      id: '5',
+      spoofScore: 0.92,
+      timestamp: DateTime.now().subtract(const Duration(days: 4)),
+      source: 'deepfake_sample.wav',
+      isLive: false,
+    ),
+  ];
+
+  Color _getScoreColor(double score) {
+    if (score < 0.3) {
+      return AppTheme.safeColor;
+    } else if (score < 0.7) {
+      return AppTheme.warningColor;
+    } else {
+      return AppTheme.dangerColor;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final historyItems = _mockHistoryItems;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detection History'),
+        elevation: 0,
+      ),
+      body: historyItems.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.history,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No detection history yet',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: historyItems.length,
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                final item = historyItems[index];
+                final formattedDate = DateFormat('MMM d, yyyy • h:mm a').format(item.timestamp);
+                
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: _getScoreColor(item.spoofScore).withOpacity(0.2),
+                      child: Icon(
+                        item.isLive ? Icons.phone : Icons.audio_file,
+                        color: _getScoreColor(item.spoofScore),
+                      ),
+                    ),
+                    title: Text(
+                      item.source,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(formattedDate),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: item.spoofScore,
+                          backgroundColor: Colors.grey.withOpacity(0.2),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            _getScoreColor(item.spoofScore),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Spoof Score: ${(item.spoofScore * 100).toInt()}%',
+                          style: TextStyle(
+                            color: _getScoreColor(item.spoofScore),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () {
+                        // Show options menu
+                        showModalBottomSheet(
+                          context: context,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          builder: (context) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.info_outline),
+                                  title: const Text('View Details'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    // Show details dialog
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.delete_outline),
+                                  title: const Text('Delete'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    // Delete item
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+16. Settings Screen
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aura_check/features/settings/bloc/settings_bloc.dart';
+import 'package:aura_check/theme/app_theme.dart';
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+        elevation: 0,
+      ),
+      body: BlocBuilder<SettingsBloc, SettingsState>(
+        builder: (context, state) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // App Theme
+              _buildSectionHeader('Appearance'),
+              _buildSettingTile(
+                title: 'Dark Mode',
+                subtitle: 'Switch between light and dark theme',
+                trailing: Switch(
+                  value: state.isDarkMode,
+                  activeColor: AppTheme.primaryColor,
+                  onChanged: (value) {
+                    context.read<SettingsBloc>().add(ToggleDarkMode());
+                  },
+                ),
+              ),
+              
+              const Divider(),
+              
+              // Notifications
+              _buildSectionHeader('Notifications'),
+              _buildSettingTile(
+                title: 'Push Notifications',
+                subtitle: 'Receive alerts for high-risk detections',
+                trailing: Switch(
+                  value: state.notificationsEnabled,
+                  activeColor: AppTheme.primaryColor,
+                  onChanged: (value) {
+                    context.read<SettingsBloc>().add(ToggleNotifications());
+                  },
+                ),
+              ),
+              
+              const Divider(),
+              
+              // Detection Settings
+              _buildSectionHeader('Detection Settings'),
+              _buildSettingTile(
+                title: 'Detection Sensitivity',
+                subtitle: 'Adjust how sensitive the detection is',
+                trailing: null,
+              ),
+              Slider(
+                value: state.detectionSensitivity,
+                min: 0.0,
+                max: 1.0,
+                divisions: 10,
+                activeColor: AppTheme.primaryColor,
+                label: '${(state.detectionSensitivity * 100).toInt()}%',
+                onChanged: (value) {
+                  context.read<SettingsBloc>().add(SetDetectionSensitivity(value));
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Less Sensitive'),
+                    Text('More Sensitive'),
+                  ],
+                ),
+              ),
+              
+              const Divider(),
+              
+              // About
+              _buildSectionHeader('About'),
+              _buildSettingTile(
+                title: 'Version',
+                subtitle: '1.0.0',
+                trailing: null,
+              ),
+              _buildSettingTile(
+                title: 'Privacy Policy',
+                subtitle: 'Read how we protect your data',
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // Open privacy policy
+                },
+              ),
+              _buildSettingTile(
+                title: 'Terms of Service',
+                subtitle: 'Read our terms and conditions',
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  // Open terms of service
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 16),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.primaryColor,
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildSettingTile({
+    required String title,
+    required String subtitle,
+    required Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: trailing,
+      onTap: onTap,
+    );
+  }
+}
+17. Add the required dependencies to pubspec.yaml
+name: aura_check
+description: Voice spoof detection app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.5
+  firebase_core: ^2.15.1
+  firebase_auth: ^4.9.0
+  cloud_firestore: ^4.9.1
+  flutter_tflite: ^1.0.1
+  audio_streams: ^0.0.3
+  permission_handler: ^10.4.3
+  lottie: ^2.6.0
+  flutter_bloc: ^8.1.3
+  equatable: ^2.0.5
+  shared_preferences: ^2.2.1
+  path_provider: ^2.1.1
+  file_picker: ^5.5.0
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.2
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/animations/
+    - assets/models/
+18. Create a file for the animations directory
+mkdir -p assets/animations
+mkdir -p assets/models
+19. Create a placeholder model file
+touch assets/models/voice_spoof_detection.tflite
+touch assets/models/labels.txt
+20. Create a main.dart file to run the app
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:aura_check/app/app.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    // Handle Firebase initialization error or use a mock implementation
+    print('Firebase initialization failed: $e');
+  }
+  
+  runApp(const AuraCheckApp());
+}
+21. Create a mock Firebase options file
+class DefaultFirebaseOptions {
+  static const currentPlatform = null;
+}
