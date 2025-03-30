@@ -10,6 +10,7 @@ import com.traumatizedvitians.spoofdetectorapplication.ui.screens.HistoryScreen
 import com.traumatizedvitians.spoofdetectorapplication.ui.screens.HomeScreen
 import com.traumatizedvitians.spoofdetectorapplication.ui.screens.LiveDetectionScreen
 import com.traumatizedvitians.spoofdetectorapplication.ui.screens.SettingsScreen
+import com.traumatizedvitians.spoofdetectorapplication.ui.screens.VoiceDetectionScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,7 +22,10 @@ fun AppNavigation() {
         startDestination = "home"
     ) {
         composable("home") {
-            HomeScreen(navController)
+
+            HomeScreen(
+                onNavigateToVoiceDetection = { navController.navigate("voice_detection") }
+            )
         }
 
         composable("live_detection") {
@@ -38,6 +42,10 @@ fun AppNavigation() {
 
         composable("settings") {
             SettingsScreen(navController)
+        }
+
+        composable("voice_detection") {
+            VoiceDetectionScreen()
         }
     }
 }

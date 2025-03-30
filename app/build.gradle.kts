@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.chaquo.python") version "15.0.1"
 }
 
 android {
@@ -16,8 +17,30 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
+        vectorDrawables {
+            useSupportLibrary = true
+        }
 
+        // Add Chaquopy configuration
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+
+        chaquopy {
+            defaultConfig {
+                pip {
+                    install("torch")
+                    install("numpy")
+                    install("soundfile")
+                    install("sounddevice")
+                    install("torchinfo")
+                }
+            }
+        }
+    }
+    packagingOptions {
+        exclude("META-INF/native-image/**")
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -67,5 +90,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
 
     // For audio processing (in a real app)
-    // implementation("com.github.squti:Android-Wave-Recorder:1.7.0")
+    implementation("com.github.squti:Android-Wave-Recorder:1.7.0")
+
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")  // Use your current version
+
 }
